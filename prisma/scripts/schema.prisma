@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("SCRIPTS_DATABASE_URL")
+}
+
+model file {
+  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  slug           String     @unique @db.VarChar(255)
+  repository_id  String     @db.Uuid
+  file_extension String     @db.VarChar(255)
+  content        String
+  created_at     DateTime   @default(now()) @db.Timestamp(6)
+  updated_at     DateTime   @default(now()) @db.Timestamp(6)
+  repository     repository @relation(fields: [repository_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model repository {
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name       String   @unique @db.VarChar(255)
+  slug       String   @unique @db.VarChar(255)
+  url        String   @db.VarChar(255)
+  visibility String   @default("public") @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+  file       file[]
+}
+
+model webhook {
+  id             String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  repository_url String          @db.VarChar(255)
+  created_at     DateTime        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime        @default(now()) @db.Timestamp(6)
+  webhook_event  webhook_event[]
+}
+
+model webhook_event {
+  id         String               @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  webhook_id String               @db.Uuid
+  status     webhook_event_status @default(pending)
+  payload    String
+  created_at DateTime             @default(now()) @db.Timestamp(6)
+  updated_at DateTime             @default(now()) @db.Timestamp(6)
+  webhook    webhook              @relation(fields: [webhook_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+enum webhook_event_status {
+  pending
+  success
+  failed
+  cancelled
+}
+
+enum repository_visibility {
+  public
+  private
+}
